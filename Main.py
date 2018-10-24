@@ -39,7 +39,6 @@ class Board(QFrame):
         for i in range(4):
             coord = self.figure.position[i][0] + self.figure.position[i][1] * 10
             self.board[coord] = color
-        print(self.board)
 
     def paintEvent(self, e):
         qp = QPainter()
@@ -59,10 +58,32 @@ class Board(QFrame):
         qp.end()
 
     def timerEvent(self, event):
-        if self.figure.move():
-            pass
+        check = self.figure.nextPosition()
+        for i in range(4):
+            try:
+                if self.board[check[1][i]] != 0:
+                    break
+            except IndexError:
+                break
         else:
-            self.newTurn()
+            if self.figure.move('down'):
+                pass
+            else:
+                self.newTurn()
+            self.update()
+            return
+        self.newTurn()
+        self.update()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+
+        if key == Qt.Key_Left:
+            self.figure.move('left')
+
+        elif key == Qt.Key_Right:
+            self.figure.move('right')
+
         self.update()
 
 
@@ -101,7 +122,7 @@ class Figure(object):
         self.shape = []
         self.position = []
         self.color = None
-        num = random.randint(1, 7)
+        num = random.randint(1, 8)
         self._make(num)
 
     def _make(self, fig):
@@ -112,13 +133,46 @@ class Figure(object):
         self.color = DATA.getColor(fig)
         self.position = self.shape.copy()
 
-    def move(self):
+    def nextPosition(self):
+        first = tuple()
+        second = tuple()
         for i in range(4):
-            if self.position[i][1] == 19:
+            first  += (self.position[i][1] + 1),
+            second += (self.position[i][0] + self.position[i][1] * 10 + 10),
+        return tuple((first, second))
+
+    def move(self, mode):
+        if mode == 'down':
+            check = self.nextPosition()
+            if 20 in check[0]:
                 return False
+            else:
+                self._down()
+                return True
+        elif mode == 'left':
+            self._left()
+            return True
+        elif mode == 'right':
+            self._right()
+            return True
+
+    def _down(self):
         for i in range(4):
             self.position[i][1] += 1
-        return True
+
+    def _left(self):
+        for i in range(4):
+            if self.position[i][0] == 0:
+                return
+        for i in range(4):
+            self.position[i][0] += -1
+
+    def _right(self):
+        for i in range(4):
+            if self.position[i][0] == 9:
+                return
+        for i in range(4):
+            self.position[i][0] += 1
 
 
 if __name__ == '__main__':
