@@ -84,6 +84,12 @@ class Board(QFrame):
         elif key == Qt.Key_Right:
             self.figure.move('right')
 
+        elif key == Qt.Key_Up:
+            self.figure.move('rotate right')
+
+        elif key ==Qt.Key_Down:
+            self.figure.move('rotate left')
+
         self.update()
 
 
@@ -103,13 +109,13 @@ class DATA(object):
 
     _colors = ((255, 255, 255), (198, 3, 3), (198, 123, 2), (109, 198, 1), (1, 198, 102), (1, 171, 198), (27, 1, 198), (168, 1, 198))
     _tetrominoe = ((),
-                   ((0, 0), (0, 1), (1, 1), (1, 2)),
-                   ((1, 0), (1, 1), (0, 1), (0, 2)),
-                   ((0, 0), (1, 0), (1, 1), (1, 2)),
-                   ((0, 0), (0, 1), (0, 2), (0, 3)),
-                   ((0, 0), (0, 1), (0, 2), (1, 2)),
-                   ((1, 0), (1, 1), (0, 2), (1, 2)),
-                   ((0, 1), (1, 0), (1, 1), (2, 1)))
+                   ((-1, 0), (0, 0), (0, 1), (0, 2)),
+                   ((1, -1), (0, -1), (0, 0), (0, 1)),
+                   ((-1, 0), (0, 0), (0, 1), (1, 1)),
+                   ((-1, 0), (0, 0), (0, 1), (1, 1)),
+                   ((0, 0), (0, 1), (1, 0), (1, 1)),
+                   ((-1, 0), (0, 0), (1, 0), (2, 0)),
+                   ((-1, 0), (0, 0), (1, 0), (0, 1)))
 
 
 class Figure(object):
@@ -117,12 +123,17 @@ class Figure(object):
     shape = []
     position = []
     color = (0, 0, 0)
+    cube = False
 
     def __init__(self):
         self.shape = []
         self.position = []
         self.color = None
-        num = random.randint(1, 8)
+        num = random.randint(1, 7)
+        if num == 5:
+            self.cube = True
+        else:
+            self.cube = False
         self._make(num)
 
     def _make(self, fig):
@@ -130,8 +141,8 @@ class Figure(object):
         for i in range(4):
             peice = sh[i]
             self.shape.append([peice[0], peice[1]])
+            self.position.append([peice[0] + 1, peice[1] + 1])
         self.color = DATA.getColor(fig)
-        self.position = self.shape.copy()
 
     def nextPosition(self):
         first = tuple()
@@ -155,6 +166,12 @@ class Figure(object):
         elif mode == 'right':
             self._right()
             return True
+        elif mode == 'rotate right':
+            self._rotateRight()
+            return True
+        elif mode == 'rotate left':
+            self._rotateLeft()
+            return True
 
     def _down(self):
         for i in range(4):
@@ -173,6 +190,34 @@ class Figure(object):
                 return
         for i in range(4):
             self.position[i][0] += 1
+
+    def _rotateRight(self):
+        if self.cube:
+            return
+        x = []
+        y = []
+        for i in range(4):
+            x.append(self.position[i][0] - self.shape[i][0])
+            y.append(self.position[i][1] - self.shape[i][1])
+            m = 0 + self.shape[i][0]
+            self.shape[i][0] = -self.shape[i][1]
+            self.shape[i][1] = m
+            self.position[i][0] = self.shape[i][0] + x[i]
+            self.position[i][1] = self.shape[i][1] + y[i]
+
+    def _rotateLeft(self):
+        if self.cube:
+            return
+        x = []
+        y = []
+        for i in range(4):
+            x.append(self.position[i][0] - self.shape[i][0])
+            y.append(self.position[i][1] - self.shape[i][1])
+            m = 0 - self.shape[i][0]
+            self.shape[i][0] = self.shape[i][1]
+            self.shape[i][1] = m
+            self.position[i][0] = self.shape[i][0] + x[i]
+            self.position[i][1] = self.shape[i][1] + y[i]
 
 
 if __name__ == '__main__':
