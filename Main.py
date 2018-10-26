@@ -66,7 +66,7 @@ class Board(QFrame):
             except IndexError:
                 break
         else:
-            if self.figure.move('down'):
+            if self.figure.move('down', self._getUsedPlaces()):
                 pass
             else:
                 self.newTurn()
@@ -75,20 +75,28 @@ class Board(QFrame):
         self.newTurn()
         self.update()
 
+    def _getUsedPlaces(self):
+        used = tuple()
+        for i in range(200):
+            if self.board[i]:
+                x = i % 10
+                used += (x, (i - x) / 10),
+        return used
+
     def keyPressEvent(self, event):
         key = event.key()
 
         if key == Qt.Key_Left:
-            self.figure.move('left')
+            self.figure.move('left', self._getUsedPlaces())
 
         elif key == Qt.Key_Right:
-            self.figure.move('right')
+            self.figure.move('right', self._getUsedPlaces())
 
         elif key == Qt.Key_Up:
-            self.figure.move('rotate right')
+            self.figure.move('rotate right', self._getUsedPlaces())
 
         elif key ==Qt.Key_Down:
-            self.figure.move('rotate left')
+            self.figure.move('rotate left', self._getUsedPlaces())
 
         self.update()
 
@@ -109,10 +117,10 @@ class DATA(object):
 
     _colors = ((255, 255, 255), (198, 3, 3), (198, 123, 2), (109, 198, 1), (1, 198, 102), (1, 171, 198), (27, 1, 198), (168, 1, 198))
     _tetrominoe = ((),
-                   ((-1, 0), (0, 0), (0, 1), (0, 2)),
+                   ((-1, -1), (0, -1), (0, 0), (0, 1)),
                    ((1, -1), (0, -1), (0, 0), (0, 1)),
                    ((-1, 0), (0, 0), (0, 1), (1, 1)),
-                   ((-1, 0), (0, 0), (0, 1), (1, 1)),
+                   ((-1, 1), (0, 1), (0, 0), (1, 0)),
                    ((0, 0), (0, 1), (1, 0), (1, 1)),
                    ((-1, 0), (0, 0), (1, 0), (2, 0)),
                    ((-1, 0), (0, 0), (1, 0), (0, 1)))
@@ -148,11 +156,11 @@ class Figure(object):
         first = tuple()
         second = tuple()
         for i in range(4):
-            first  += (self.position[i][1] + 1),
+            first += (self.position[i][1] + 1),
             second += (self.position[i][0] + self.position[i][1] * 10 + 10),
         return tuple((first, second))
 
-    def move(self, mode):
+    def move(self, mode, used):
         if mode == 'down':
             check = self.nextPosition()
             if 20 in check[0]:
@@ -161,63 +169,67 @@ class Figure(object):
                 self._down()
                 return True
         elif mode == 'left':
-            self._left()
+            self._left(used)
             return True
         elif mode == 'right':
-            self._right()
+            self._right(used)
             return True
         elif mode == 'rotate right':
-            self._rotateRight()
+            self._rotateRight(used)
             return True
         elif mode == 'rotate left':
-            self._rotateLeft()
+            self._rotateLeft(used)
             return True
 
     def _down(self):
         for i in range(4):
             self.position[i][1] += 1
 
-    def _left(self):
+    def _left(self, used):
         for i in range(4):
-            if self.position[i][0] == 0:
+            if self.position[i][0] == 0 or (self.position[i][0] - 1) in used:
                 return
         for i in range(4):
             self.position[i][0] += -1
 
-    def _right(self):
+    def _right(self, used):
         for i in range(4):
-            if self.position[i][0] == 9:
+            if self.position[i][0] == 9 or (self.position[i][0] + 1) in used:
                 return
         for i in range(4):
             self.position[i][0] += 1
 
-    def _rotateRight(self):
+    def _rotateRight(self, used):
         if self.cube:
             return
-        x = []
-        y = []
+        newPosition = []
+        newShape = []
         for i in range(4):
-            x.append(self.position[i][0] - self.shape[i][0])
-            y.append(self.position[i][1] - self.shape[i][1])
-            m = 0 + self.shape[i][0]
-            self.shape[i][0] = -self.shape[i][1]
-            self.shape[i][1] = m
-            self.position[i][0] = self.shape[i][0] + x[i]
-            self.position[i][1] = self.shape[i][1] + y[i]
+            newX = -self.shape[i][1] + self.position[i][0] - self.shape[i][0]
+            newY = self.shape[i][0] + self.position[i][1] - self.shape[i][1]
+            if 0 <= newX <= 9 and 0 <= newY <= 19 and tuple((newX, newY)) not in used:
+                newPosition.append([newX, newY])
+                newShape.append([-self.shape[i][1], self.shape[i][0]])
+            else:
+                return
+        self.position = newPosition.copy()
+        self.shape = newShape.copy()
 
-    def _rotateLeft(self):
+    def _rotateLeft(self, used):
         if self.cube:
             return
-        x = []
-        y = []
+        newPosition = []
+        newShape = []
         for i in range(4):
-            x.append(self.position[i][0] - self.shape[i][0])
-            y.append(self.position[i][1] - self.shape[i][1])
-            m = 0 - self.shape[i][0]
-            self.shape[i][0] = self.shape[i][1]
-            self.shape[i][1] = m
-            self.position[i][0] = self.shape[i][0] + x[i]
-            self.position[i][1] = self.shape[i][1] + y[i]
+            newX = self.shape[i][1] + self.position[i][0] - self.shape[i][0]
+            newY = -self.shape[i][0] + self.position[i][1] - self.shape[i][1]
+            if 0 <= newX <= 9 and 0 <= newY <= 19 and tuple((newX, newY)) not in used:
+                newPosition.append([newX, newY])
+                newShape.append([self.shape[i][1], -self.shape[i][0]])
+            else:
+                return
+        self.position = newPosition.copy()
+        self.shape = newShape.copy()
 
 
 if __name__ == '__main__':
