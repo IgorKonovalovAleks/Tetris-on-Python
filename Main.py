@@ -46,7 +46,7 @@ class Board(QFrame):
         qp.setPen(QColor(200, 100, 100))
         for i in range(200):
             x = i % 10
-            y = (i - x) / 10
+            y = (i - x) // 10
             if self.board[i] != 0:
                 tpl = DATA.getColor(self.board[i])
                 qp.setBrush(QColor(tpl[0], tpl[1], tpl[2]))
@@ -59,11 +59,10 @@ class Board(QFrame):
 
     def timerEvent(self, event):
         check = self.figure.nextPosition()
+        used = self._getUsedPlaces()
+        print(check, used)
         for i in range(4):
-            try:
-                if self.board[check[1][i]] != 0:
-                    break
-            except IndexError:
+            if (check[i][0], check[i][1]) in used:
                 break
         else:
             if self.figure.move('down', self._getUsedPlaces()):
@@ -80,8 +79,20 @@ class Board(QFrame):
         for i in range(200):
             if self.board[i]:
                 x = i % 10
-                used += (x, (i - x) / 10),
+                used += (x, (i - x) // 10),
         return used
+
+    def drop(self, used):
+        while True:
+            for i in range(4):
+                nextPos = self.figure.nextPosition()
+                if nextPos[i] in used or nextPos[i][1] == 20:
+                    break
+            else:
+                self.figure.move('down', used)
+                continue
+            self.newTurn()
+            break
 
     def keyPressEvent(self, event):
         key = event.key()
@@ -95,8 +106,11 @@ class Board(QFrame):
         elif key == Qt.Key_Up:
             self.figure.move('rotate right', self._getUsedPlaces())
 
-        elif key ==Qt.Key_Down:
+        elif key == Qt.Key_Down:
             self.figure.move('rotate left', self._getUsedPlaces())
+
+        elif key == Qt.Key_Space:
+            self.drop(self._getUsedPlaces())
 
         self.update()
 
@@ -153,21 +167,19 @@ class Figure(object):
         self.color = DATA.getColor(fig)
 
     def nextPosition(self):
-        first = tuple()
         second = tuple()
         for i in range(4):
-            first += (self.position[i][1] + 1),
-            second += (self.position[i][0] + self.position[i][1] * 10 + 10),
-        return tuple((first, second))
+            second += (self.position[i][0], self.position[i][1] + 1),
+        return second
 
     def move(self, mode, used):
         if mode == 'down':
             check = self.nextPosition()
-            if 20 in check[0]:
-                return False
-            else:
-                self._down()
-                return True
+            for i in range(4):
+                if check[i][1] == 20:
+                    return False
+            self._down()
+            return True
         elif mode == 'left':
             self._left(used)
             return True
@@ -187,14 +199,14 @@ class Figure(object):
 
     def _left(self, used):
         for i in range(4):
-            if self.position[i][0] == 0 or (self.position[i][0] - 1) in used:
+            if self.position[i][0] == 0 or (self.position[i][0] - 1, self.position[i][1]) in used:
                 return
         for i in range(4):
             self.position[i][0] += -1
 
     def _right(self, used):
         for i in range(4):
-            if self.position[i][0] == 9 or (self.position[i][0] + 1) in used:
+            if self.position[i][0] == 9 or (self.position[i][0] + 1, self.position[i][1]) in used:
                 return
         for i in range(4):
             self.position[i][0] += 1
