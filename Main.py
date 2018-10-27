@@ -1,7 +1,7 @@
 import random
 import sys
 
-from PyQt5.QtCore import QBasicTimer, Qt
+from PyQt5.QtCore import QBasicTimer, Qt, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFrame
 
@@ -14,6 +14,10 @@ class Game(QMainWindow):
         self.setWindowTitle('Tetris')
         self.tetBoard = Board(self)
         self.setCentralWidget(self.tetBoard)
+        self.tetBoard.resize(200, 415)
+        self.statusbar = self.statusBar()
+        self.tetBoard.msg2statusbar.connect(self.statusbar.showMessage)
+        self.tetBoard.start()
         self.show()
 
 
@@ -21,6 +25,8 @@ class Board(QFrame):
 
     cube = 20
     figure = None
+    msg2statusbar = pyqtSignal(str)
+    scores = 0
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -28,11 +34,26 @@ class Board(QFrame):
         self.timer = QBasicTimer()
         self.setFocusPolicy(Qt.StrongFocus)
         self.figure = Figure()
+
+    def start(self):
+        self.msg2statusbar.emit("Scores: " + str(self.scores))
         self.timer.start(500, self)
 
     def newTurn(self):
+        newFigure = Figure()
         self.dropFigure()
-        self.figure = Figure()
+        used = self._getUsedPlaces()
+        for i in range(4):
+            if tuple(newFigure.position[i]) in used:
+                break
+        else:
+            self.figure = newFigure
+            return
+        self.gameOver()
+
+    def gameOver(self):
+        self.timer.stop()
+        self.msg2statusbar.emit("Game Over")
 
     def dropFigure(self):
         color = DATA.getColors().index(self.figure.color)
@@ -60,7 +81,6 @@ class Board(QFrame):
     def timerEvent(self, event):
         check = self.figure.nextPosition()
         used = self._getUsedPlaces()
-        print(check, used)
         for i in range(4):
             if (check[i][0], check[i][1]) in used:
                 break
