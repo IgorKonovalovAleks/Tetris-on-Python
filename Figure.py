@@ -5,15 +5,13 @@ from Data import DATA
 
 class Figure(object):
 
-    shape = []
-    position = []
-    color = (0, 0, 0)
-    cube = False
+    __slots__ = ['shape', 'position', 'color', 'cube']
 
     def __init__(self):
         self.shape = []
         self.position = []
         self.color = None
+        self.cube = False
         num = random.randint(1, 7)
         if num == 5:
             self.cube = True

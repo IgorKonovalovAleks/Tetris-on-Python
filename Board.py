@@ -8,10 +8,7 @@ from Figure import Figure
 
 class Board(QFrame):
 
-    cube = 20
-    figure = None
     msg2statusbar = pyqtSignal(str)
-    scores = 0
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -19,6 +16,8 @@ class Board(QFrame):
         self.timer = QBasicTimer()
         self.setFocusPolicy(Qt.StrongFocus)
         self.figure = Figure()
+        self.cube = 20
+        self.scores = 0
 
     def start(self):
         self.msg2statusbar.emit("Scores: " + str(self.scores))

@@ -1,7 +1,7 @@
+#!/usr/bin/env python3.5
+
 import sys
-
 from PyQt5.QtWidgets import QApplication, QMainWindow
-
 from Board import Board
 
 
@@ -15,7 +15,7 @@ class Game(QMainWindow):
         self.setCentralWidget(self.tetBoard)
         self.tetBoard.resize(200, 440)
         self.statusbar = self.statusBar()
-        self.tetBoard.msg2statusbar.connect(self.statusbar.showMessage)
+        self.tetBoard.msg2statusbar[str].connect(self.statusbar.showMessage)
         self.tetBoard.start()
         self.show()
 
