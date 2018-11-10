@@ -9,6 +9,8 @@ from Figure import Figure
 class Board(QFrame):
 
     msg2statusbar = pyqtSignal(str)
+    closeMsg = pyqtSignal()
+    scoresMsg = pyqtSignal(int)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -17,10 +19,11 @@ class Board(QFrame):
         self.setFocusPolicy(Qt.StrongFocus)
         self.figure = Figure()
         self.cube = 20
+        self.linesRemoved = 0
         self.scores = 0
 
     def start(self):
-        self.msg2statusbar.emit("Scores: " + str(self.scores))
+        self.msg2statusbar.emit("Scores: " + str(self.linesRemoved))
         self.timer.start(500, self)
 
     def newTurn(self):
@@ -32,9 +35,21 @@ class Board(QFrame):
                 break
         else:
             self.figure = newFigure
+            count = 0
             while self.removeFullLines():
-                self.scores += 1
-            self.msg2statusbar.emit("Scores: " + str(self.scores))
+                self.linesRemoved += 1
+                count += 1
+
+            if count == 1:
+                self.scoresMsg.emit(100)
+            elif count == 2:
+                self.scoresMsg.emit(300)
+            elif count == 3:
+                self.scoresMsg.emit(600)
+            elif count == 4:
+                self.scoresMsg.emit(1000)
+
+            self.msg2statusbar.emit("Lines removed: " + str(self.linesRemoved))
             return
         self.gameOver()
 
@@ -77,6 +92,8 @@ class Board(QFrame):
         for i in range(4):
             qp.drawRect(self.figure.position[i][0] * self.cube,
                         self.figure.position[i][1] * self.cube, self.cube, self.cube)
+        qp.drawLine(self.width() - 1, 0, self.width() - 1, self.height())
+        qp.drawLine(0, self.height() - 1, self.width(), self.height() - 1)
         qp.end()
 
     def timerEvent(self, event):
@@ -132,5 +149,8 @@ class Board(QFrame):
 
         elif key == Qt.Key_Space:
             self.drop(self._getUsedPlaces())
+
+        elif key == Qt.Key_K:
+            self.closeMsg.emit()
 
         self.update()
